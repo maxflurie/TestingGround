@@ -1,7 +1,7 @@
 ---
 title: "LME Models in Longitudinal Treatment Data"
 author: "Max Flurie"
-date: "9/28/2020"
+date: "9/29/2020"
 output: 
   html_document:
     number_sections: yes
