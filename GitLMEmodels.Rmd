@@ -179,7 +179,12 @@ Example: X=Time, Y= Accuracy; How does naming accuracy change over time?
 
 In both, the goal of the model is to "fit a line" accounting for all observations of the data and minimize residuals (i.e., minimize error in the fitted model)
 
-<img src="linear_regression.png" width="300">
+### Option 1
+<img src="https://raw.githubusercontent.com/maxflurie/test2/master/linear_regression.png" width="300">
+
+### Option 2
+![Test](https://raw.githubusercontent.com/maxflurie/test2/master/linear_regression.png)
+
 ***Linear Regression***
 
 ## Simple Linear Model Assumptions
@@ -224,7 +229,12 @@ Mixed models can account for random variance from more than one source in the da
 
 Random effects (random intercepts here) will allow the performance to vary for each patient
 
-<img src="random_intercept.png" width="300">
+### Option 1
+<img src="https://raw.githubusercontent.com/maxflurie/test2/master/random_intercept.png" width="300">
+
+### Option 2
+![Test2](https://raw.githubusercontent.com/maxflurie/test2/master/random_intercept.png)
+
 ***Random Intercept***
 
 
