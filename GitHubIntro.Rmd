@@ -1,5 +1,5 @@
 ---
-title: "GitHub Introductio"
+title: "GitHub Introduction"
 author: "Max Flurie"
 date: "10/4/2020"
 output: 
@@ -175,15 +175,32 @@ ul {
 
 GitHub is a cloud-based service that allows version-control and source-code management (i.e., tracking changes on files). GitHub is similar to Google Docs with the ability to collaborate on single documents and projects. Though, GitHub has more strucuture for collaborations on files, which are discussed here.   
 
-
 **Requirements to use:**
 
-## Managing Projects in GitHub
+[GitHub Account](https://github.com/) - This is your account to use the "cloud"
+
+[GitHub Desktop](https://desktop.github.com/) - This allows you to make local changes (i.e., changes on your computer) to a file and add them to the GitHub cloud 
+
+# GitHub Functions
+
+**1.	How to publish files directly from RMarkdown to github and github pages**
+What is a Repository, Pushing, Pulling 
+
+# Managing Projects in GitHub
 
 ### Branching
 
+**2.How to share and edit within repositories**
+
 ### Forking
 
+**3. How to fork and edit shared markdown files**
+
+**4. Public vs. Private**
+
+# GitHub and R
+
+**5. How to insert relative paths in R Markdown files**
 
 <img src="https://raw.githubusercontent.com/maxflurie/test2/master/linear_regression.png" width="300">
 
@@ -222,201 +239,3 @@ library(rstatix)
 max.theme <- theme_bw() + theme(axis.line = element_line(colour = "black"), panel.grid.minor = element_blank(), panel.grid.major = element_blank(), panel.border = element_blank(), panel.background = element_blank(), legend.title= element_blank())
 ```
 
-## Prepare Data 
-
-### Import Data
-```{r, echo=TRUE, include=TRUE,warning=FALSE, message=FALSE}
-setwd("~/Documents/RData/LME Tutorial")
-LexDropMaster<- read_csv("LexDropMaster.csv")
-```
-
-### Clean Data
-```{r, echo=TRUE, include=TRUE,warning=FALSE, message=FALSE}
-#Remove non-interest variables
-Less <-LexDropMaster [-c(1,3,4,5,7,16,18,19,20,22,23,31)]
-####Group by Patient, Timepoint, and Condition####
-RearrangeLess <- Less %>% 
-  group_by(Patient, TimePoint, Condition) %>% 
-  summarize_at(vars(c(1:12)),mean, na.rm=TRUE) ## "na.rm=TRUE" skips over NAs in variable
-####Remove T5
-RearrangeLess<-subset(RearrangeLess,  TimePoint!="T5")
-RearrangeLess
-```
-
-
-### Summarize Variables of Interest (Table 3)
-```{r, echo=TRUE,warning=FALSE, message=FALSE}
-SummaryStats <-RearrangeLess %>%
-  group_by(Condition, TimePoint)%>%
-  summarize(mean=mean(Acc, na.rm=TRUE),
-            sd=sd(Acc, na.rm=TRUE))
-SummaryStats
-##Note:Check for missing data
-```
-
-## Plot the Data
-### Plot the Data: By Group (Fig 1)
-```{r, echo=TRUE,warning=FALSE, message=FALSE}
-#Across patients 
-TotalAccMeansPlot2 <- ggplot(RearrangeLess, aes(TimePoint, Acc, color=Condition, fill=Condition)) + 
-  stat_summary(fun.data = mean_se, geom = "point", size = 2 ) +stat_summary(fun.data = mean_se, geom = "line", size = .5, aes(group = Condition))+ stat_summary(fun.data = mean_se, geom = "errorbar")+max.theme
-print(TotalAccMeansPlot2)
-```
-
-### Plot the Data: By Participant (Fig 2)
-```{r, echo=TRUE,warning=FALSE, message=FALSE}
-#Each patient
-ggplot(RearrangeLess, aes(TimePoint, Acc, shape = TimePoint, fill = Condition)) + 
-  geom_point(shape = 21, color = "black", size = 5, alpha = 0.6, position = position_jitter(w = 0.03, 
-h = 0)) + stat_summary(fun.y = mean, fun.ymin = mean, fun.ymax = mean, 
-geom = "crossbar", color = "black", size = 0.4, width = 0.3) + max.theme
-```
-
-## Check Assumptions
-### Run Model
-```{r, echo=TRUE, message=FALSE, warning=FALSE}
-betterAccmodel <- lmer(Acc ~ TimePoint + Condition + TimePoint:Condition + (1|Patient), data=RearrangeLess)
-```
-
-### Check Normality
-```{r, echo=TRUE}
-outlierTest(betterAccmodel) #Outliers
-qqmath(betterAccmodel) #Normality 
-#Note: Plot shows observed Residuals (Y) vs. Theoretic (X). If both sets of quantiles are from the same distribution, it should form a fairly straight line. Normality can be fixed with transformations, like in standard linear models. 
-
-```
-
-### Check Linearity
-```{r, echo=TRUE}
-plot(betterAccmodel)
-#Note: Plot shows Studentized Residuals (Y) vs. Fitted (X) (i.e., Model Predicted) Values. We should not be able to discern a pattern here. Example: a U-shape (polynomial relationship).
-```
-
-## Analyze the Data
-### Run Linear Mixed Effects Model
-```{r,warning=FALSE, message=FALSE}
-betterAccmodel <- lmer(Acc ~ TimePoint + Condition + TimePoint:Condition + (1|Patient), data=RearrangeLess)
-anova(betterAccmodel)
-```
-### Compare to R-ANOVA
-```{r,warning=TRUE, message=FALSE}
-FixedWide<- read_csv("~/Documents/Professional/Talks/RANOVA.csv") #Read in data
-
-gg_miss_var(FixedWide) #Plot Missingness
-
-res.aov <- anova_test(
-  data = FixedWide, dv = Acc, wid = Patient,
-  within = c(Condition, TimePoint))
-get_anova_table(res.aov)
-#See how DFs are impacted due to missingness/Listwise Deletion. Example: Main effect of Treatment, df(1,6)?
-```
-
-## Post-Hoc Assessment
-### Plot Differences from Baseline to Final Timepoint
-```{r, echo=TRUE, include=TRUE,warning=FALSE, message=FALSE}
-###Clean Data
-DifPrep<-subset(RearrangeLess,  TimePoint!="T2" &TimePoint!="T3")
-DifPrep2<- DifPrep %>% group_by(Patient, Condition) %>% filter(n() > 1) %>%
-  mutate(Difference = Acc - lag(Acc))
-DifPrep2<-DifPrep2[-c(4:15)]
-DifPrep2<-DifPrep2[complete.cases(DifPrep2), ]
-DifPrep2<-subset(DifPrep2, Patient!="S16")
-
-###Prep Data 
-NewcatStats <- DifPrep2 %>% group_by(Condition) %>%
-  summarize_at(vars(3), funs(mean,se, sd), na.rm =TRUE) %>% as.data.frame()
-
-####Make plot of  means by Code####
-colvec<- c("darkorange","lightblue")
-NewCatPlot2 <- ggplot(NewcatStats, aes(Condition, mean, fill= Condition)) +  
-  geom_point(shape = 21, size = 2.3,) +  geom_bar(stat = "summary", fun.y="mean", alpha=.6) + coord_cartesian(ylim = c(-.24,.01))+
-  scale_fill_manual(values=colvec) + 
-  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width=0.01)+scale_x_discrete(limits=c("train","control"))+max.theme
-print(NewCatPlot2)
-```
-
-### Naming Accuracy Difference Scores (Fig 2) 
-```{r, echo=TRUE, include=TRUE,warning=FALSE, message=FALSE}
-###Create Difference Scores
-DFtest <- t.test(Difference ~ Condition, data = DifPrep2, paired=TRUE)
-DFtest
-####Effect Size (i.e., magnitude of difference between variables)
-library(effsize)
-EffSize<-cohen.d(DifPrep2$Difference ~ DifPrep2$Condition, paired = TRUE)
-EffSize
-```
-
-### Neuropsychological Performance and Naming Correlation Plot
-```{r, echo=TRUE, include=TRUE, warning=FALSE, message=FALSE}
-###Prep Data
-LexDropMaster<- read_csv("LexDropMaster.csv")
-Less <-LexDropMaster [-c(1,3,4,5,7,16,18,19,20,22,23,31)]
-Less2 <-Less[c(1:10,12)]
-###Group by Patient
-CorrPrep <- Less2 %>% 
-  group_by(Patient) %>% 
-  summarize_at(vars(c(1:10)),mean, na.rm=TRUE)
-CorrPrep <-CorrPrep[-c(1,2)]
-
-####Run Correlations
-CorrPlot <-cor(CorrPrep, method = "pearson") 
-sig <- cor.mtest(CorrPrep, conf.level = .95) ##run correlations for each variable
-
-###Make the Correlation Plot
-col <- colorRampPalette(c("#BB4444", "#EE9988", "#FFFFFF", "#77AADD", "#4477AA"))
-cont.plot2<- corrplot(CorrPlot, method="color", col=col(200), 
-                      type="upper", order="hclust", 
-                      addCoef.col = "black", # Add coefficient of correlation
-                      tl.col="black", tl.srt=45, #Text label color and rotation
-                      # Combine with significance
-                      p.mat = sig$p, sig.level = 0.05, insig = "blank", 
-                      # hide correlation coefficient on the principal diagonal
-                      diag=FALSE )
-
-####Show P-values for your reference#######
-corr.data = function(CorrPlot) {
-#Get correlations
-  cor.vals = cor(CorrPlot)
-###Get p-values
-  cor.p = cor.mtest(CorrPlot, conf.level = 0.95)$p
-  rownames(cor.p) = rownames(cor.vals)
-  colnames(cor.p) = colnames(cor.vals)
-  
-  cbind(rowvars=rownames(cor.vals), data.frame(cor.vals)) %>% 
-    gather(colvars, corr, -rowvars) %>% 
-    left_join(cbind(rowvars=rownames(cor.p), data.frame(cor.p)) %>% 
-                gather(colvars, p.value, -rowvars))
-}
-corr.data(CorrPrep) %>% 
-  ggplot(aes(colvars, fct_rev(rowvars))) +
-  geom_tile(colour="grey70", fill=NA) +
-  geom_text(aes(label=sprintf("%1.2f", corr)), position=position_nudge(y=0.2), 
-            size=3, colour="grey20") +
-  geom_text(aes(label=paste0("(",sprintf("%1.2f", p.value),")")), position=position_nudge(y=-0.2), 
-            colour="grey20", size=2.5) +
-  labs(x="",y="") +
-  theme_classic() +
-  coord_fixed()
-```
-
-### Make Individual Correlation and Plot in Grid
-```{r, echo=TRUE,warning=FALSE, message=FALSE}
-library(gridExtra)
-
-#Creat Each Correlation Plot
-plot1<- ggplot(CorrPrep, aes(x=CorrPrep$BNT, y=CorrPrep$Acc)) +geom_smooth(method=lm, se=FALSE,color="grey")+
-  geom_point(size=2, color="steelblue3", fill="purple")+max.theme+labs(x="BNT", y = "Acc")
-plot2 <-ggplot(CorrPrep, aes(x=CorrPrep$PPTpics, y=CorrPrep$Acc)) +geom_smooth(method=lm, se=FALSE,color="grey")+
-  geom_point(size=2, color="steelblue3")+max.theme+labs(x="PPTpics", y = "Acc")
-plot3<-ggplot(CorrPrep, aes(x=CorrPrep$PPTwords, y=CorrPrep$Acc)) +geom_smooth(method=lm, se=FALSE,color="grey")+
-  geom_point(size=2, color="steelblue3")+max.theme+labs(x="PPTwords", y = "Acc")
-plot4<-ggplot(CorrPrep, aes(x=CorrPrep$BNT, y=CorrPrep$PPTpics)) +geom_smooth(method=lm, se=FALSE,color="grey")+
-  geom_point(size=2, color="steelblue3")+max.theme+labs(x="BNT", y = "PPTpics")
-plot5<-ggplot(CorrPrep, aes(x=CorrPrep$BNT, y=CorrPrep$PPTwords)) +geom_smooth(method=lm, se=FALSE,color="grey")+
-  geom_point(size=2, color="steelblue3")+scale_y_continuous(breaks=c(15,20,25))+max.theme+labs(x="BNT", y = "PPTwords")
-plot6<-ggplot(CorrPrep, aes(x=CorrPrep$PPTpics, y=CorrPrep$PPTwords)) +geom_smooth(method=lm, se=FALSE,color="grey")+
-  geom_point(size=2, color="steelblue3")+max.theme+labs(x="PPTpics", y = "PPTwords")
-
-#Put them all in one grid
-grid.arrange(plot1, plot5,plot2,plot6,plot3,plot4, nrow = 3)
-```
